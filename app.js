@@ -19,12 +19,14 @@ const RED_SOUND = document.getElementById('sfx-failed');
 let gameList = [];
 let cityList = [];
 let cityAlarms = {}; // Stores our dynamic risk map
+let dailyHourlyBuckets = new Array(24).fill(0); // Stores the 24 hour trend map
 
 // Fetch Live Data on Load
 document.addEventListener('DOMContentLoaded', () => {
     fetchAlertData();
     fetchGameDatabase();
     fetchCityDatabase();
+    fetchAnalytics();
 
     // Check local storage for Quick Scan
     checkLocalStorageParams();
@@ -70,6 +72,26 @@ function runQuickScan() {
         }
     } else {
         startSurvey();
+    }
+}
+
+async function fetchAnalytics() {
+    try {
+        const res = await fetch('/api/analytics');
+        const data = await res.json();
+        if (data.success && data.visits) {
+            const visitorEl = document.getElementById('visitor-count-display');
+            if (visitorEl) {
+                // Add commas for thousands
+                const visitsStr = data.visits.toLocaleString('en-US');
+                visitorEl.innerHTML = `👥 <strong>${visitsStr}</strong> אנשים בדקו ביממה האחרונה`;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load analytics", e);
+        // Silently fail if analytics is down
+        const visitorEl = document.getElementById('visitor-count-display');
+        if (visitorEl) visitorEl.style.display = 'none';
     }
 }
 
@@ -365,6 +387,7 @@ async function fetchAlertData() {
         if (data.success) {
             riskData.alarmsToday = data.totalRecentAlerts || 0;
             if (data.cityAlarms) cityAlarms = data.cityAlarms;
+            if (data.hourlyBuckets) dailyHourlyBuckets = data.hourlyBuckets;
 
             // Format time if available
             let lastAlarmStr = "אין";
@@ -678,7 +701,79 @@ function showResult() {
         <div>&bull; ${riskData.rankReasoning}</div>
     `;
 
+    renderTrendGraph();
     showScreen('screen-result');
+}
+
+let trendChartInstance = null;
+
+function renderTrendGraph() {
+    const container = document.getElementById('trend-graph-container');
+    const ctx = document.getElementById('trendChart');
+
+    // Only render if we have data to show (sum of array > 0)
+    const totalBuckets = dailyHourlyBuckets.reduce((a, b) => a + b, 0);
+    if (totalBuckets === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    if (trendChartInstance) {
+        trendChartInstance.destroy();
+    }
+
+    // Create labels for hours (00:00 to 23:00)
+    const hourlyLabels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+
+    // Determine colors based on risk severity (green for 0, red for high, yellow for mid)
+    const backgroundColors = dailyHourlyBuckets.map(count => {
+        if (count === 0) return 'rgba(57, 255, 20, 0.4)'; // Greenish
+        if (count > 5) return 'rgba(255, 7, 58, 0.7)'; // Reddish
+        return 'rgba(255, 234, 0, 0.6)'; // Yellowish
+    });
+
+    trendChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: hourlyLabels,
+            datasets: [{
+                label: 'אזעקות בשעה',
+                data: dailyHourlyBuckets,
+                backgroundColor: backgroundColors,
+                borderWidth: 0,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    titleFont: { family: 'Heebo' },
+                    bodyFont: { family: 'Heebo' },
+                    displayColors: false,
+                    callbacks: {
+                        label: function (context) {
+                            return context.raw === 0 ? 'אין אזעקות - בטוח לשחק' : `${context.raw} התרעות באזור זה`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false, color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: 'rgba(255,255,255,0.5)', maxTicksLimit: 6 }
+                },
+                y: {
+                    display: false,
+                    beginAtZero: true
+                }
+            }
+        }
+    });
 }
 
 function copyToClipboard() {

@@ -27,6 +27,7 @@ export default async function handler(req, res) {
         let totalAlerts = 0;
         let latestAlertTime = 0;
         let cityAlarms = {}; // Map: {"city": { count: 2, lastAlert: timestamp }}
+        let hourlyBuckets = new Array(24).fill(0); // For the trend graph (amount of alerts per hour)
 
         if (Array.isArray(data)) {
             data.forEach(eventGroup => {
@@ -54,6 +55,11 @@ export default async function handler(req, res) {
                                 }
                             });
                         }
+
+                        // Add to hourly bucket (convert timestamp to IL hour 0-23)
+                        const dateObj = new Date(alertTime * 1000);
+                        const hour = dateObj.getHours(); // Local time for server, assume Israel timezone matches target
+                        hourlyBuckets[hour] += 1;
                     });
                 }
             });
@@ -64,6 +70,7 @@ export default async function handler(req, res) {
             totalRecentAlerts: totalAlerts,
             lastUpdateTimestamp: latestAlertTime,
             cityAlarms: cityAlarms,
+            hourlyBuckets: hourlyBuckets,
             message: "Data fetched successfully from api.tzevaadom.co.il"
         });
 

@@ -9,8 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=Orbitron:wght@500;700;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=Orbitron:wght@700;900&display=swap"
         rel="stylesheet">
+
+    <!-- Chart.js for Trend Graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -51,7 +54,13 @@
                 ☕ תרומה למפתח
             </a>
 
-            <a href="legal.html" class="donate-btn" style="margin-top:0.5rem;">
+            <!-- Visitor Counter -->
+            <p id="visitor-count-display"
+                style="color: var(--text-muted); font-size: 0.8rem; margin-top: 1.5rem; text-align: center;">
+                👥 נתוני כניסות בטעינה...
+            </p>
+
+            <a href="legal.html" class="donate-btn" style="margin-top:0.5rem; font-size: 0.8rem; opacity: 0.8;">
                 ⚖️ תנאי שימוש ומדיניות פרטיות
             </a>
         </section>
@@ -164,6 +173,15 @@
                 <!-- Risk Breakdown -->
                 <div id="risk-breakdown"
                     style="margin-top: 15px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; text-align: right; color: rgba(255,255,255,0.8); line-height: 1.4;">
+                </div>
+
+                <!-- Trend Graph Container -->
+                <div id="trend-graph-container" style="margin-top: 25px; display: none;">
+                    <h4 style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; text-align: center;">
+                        מגמת אזעקות - 24 שעות אחרונות</h4>
+                    <div style="position: relative; height: 120px; width: 100%;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
                 </div>
             </div>
 
