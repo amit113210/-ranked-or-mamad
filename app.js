@@ -2,8 +2,12 @@
 let riskData = {
     gameName: '',
     gameLengthScore: 0,
+    gameReasoning: '',
+    cityName: '',
     locationScore: 0,
+    locationReasoning: [],
     rankMultiplier: 1.0,
+    rankReasoning: '',
     alarmsToday: 0,
     finalScore: 0,
     resultTheme: ''
@@ -285,6 +289,7 @@ function startSurvey() {
 function selectQ1Autocomplete(gameName, score) {
     riskData.gameName = gameName;
     riskData.gameLengthScore = score;
+    riskData.gameReasoning = `סגנון משחק מוסיף ${score} נק' בסיס.`;
     showScreen('screen-q2');
 }
 
@@ -298,6 +303,7 @@ function selectQ1(score) {
     }
     riskData.gameName = gameInput;
     riskData.gameLengthScore = score;
+    riskData.gameReasoning = `סגנון משחק מוסיף ${score} נק' בסיס.`;
     showScreen('screen-q2');
 }
 
@@ -315,6 +321,7 @@ function selectQ2() {
 
     // Risk Calculation based on location (Time & Radius Model)
     let risk = 10; // default low base
+    let locationReasons = ["אזור המגורים מוסיף כברירת מחדל +10 נק'."];
 
     const nowSeconds = Math.floor(Date.now() / 1000);
     const twoHoursLimit = nowSeconds - (2 * 60 * 60);
@@ -332,6 +339,7 @@ function selectQ2() {
                     if ((nafa && neighborCityInfo.nafa === nafa) ||
                         (moatza && neighborCityInfo.moatza === moatza)) {
                         splashDamage = 15; // Collateral Risk
+                        locationReasons.push(`נזק היקפי: בוצע ירי לעבר ${cName} (סביבה גיאוגרפית), זה מסיף עוד +15 נק'.`);
                         break;
                     }
                 }
@@ -347,12 +355,15 @@ function selectQ2() {
 
         // Volume: +5 points per alarm today
         directRisk += (cData.count * 5);
+        locationReasons.push(`תיעוד חי: נרשמו ${cData.count} אזעקות היום ב-${cityName} (+${cData.count * 5} נק').`);
 
         // Freshness
         if (cData.lastAlert >= twoHoursLimit) {
             directRisk += 40; // Critical Red
+            locationReasons.push(`התרעה חמה: האזעקה האחרונה הייתה בשעתיים האחרונות! מוסיף אזהרה קריטית (+40 נק').`);
         } else if (cData.lastAlert >= twelveHoursLimit) {
             directRisk += 20; // Tense Yellow
+            locationReasons.push(`שרידי ירי: נרשמו אזעקות ב-12 השעות האחרונות. עירנות נדרשת (+20 נק').`);
         }
     }
 
@@ -361,7 +372,9 @@ function selectQ2() {
     // Safety cap: Location risk cannot exceed 60 to prevent breaking the formula entirely
     if (risk > 60) risk = 60;
 
+    riskData.cityName = cityName;
     riskData.locationScore = risk;
+    riskData.locationReasoning = locationReasons;
     showScreen('screen-q3');
 }
 
@@ -376,6 +389,12 @@ function calculateResult() {
 
     // Convert 1-10 to multiplier 0.5 - 1.5
     riskData.rankMultiplier = 0.5 + ((rankVal - 1) * (1.0 / 9));
+
+    if (riskData.rankMultiplier > 1.0) {
+        riskData.rankReasoning = `לחץ ראנק מחושב כמכפיל חומרה של x${riskData.rankMultiplier.toFixed(2)}`;
+    } else {
+        riskData.rankReasoning = `אתה לא לחוץ על הראנק ולכן מקבל הקלה בסיכון פי x${riskData.rankMultiplier.toFixed(2)}`;
+    }
 
     // Base score from answers
     let baseScore = riskData.gameLengthScore + riskData.locationScore;
@@ -468,6 +487,15 @@ function showResult() {
 
     const gameInfoElement = document.getElementById('result-game-info');
     gameInfoElement.innerText = `המשחק שלך: ${riskData.gameName}`;
+
+    // Set Breakdown
+    const breakdownBox = document.getElementById('risk-breakdown');
+    breakdownBox.innerHTML = `
+        <strong style="color:white; display:block; margin-bottom:5px;">📊 איך הגענו לזה?</strong>
+        <div>&bull; ${riskData.gameReasoning}</div>
+        ${riskData.locationReasoning.map(reason => `<div>&bull; ${reason}</div>`).join('')}
+        <div>&bull; ${riskData.rankReasoning}</div>
+    `;
 
     showScreen('screen-result');
 }
