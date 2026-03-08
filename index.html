@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ראנקד או ממ"ד</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Main Container -->
+    <div class="app-container">
+
+        <!-- Background elements (Grid/Glow) -->
+        <div class="cyber-grid"></div>
+
+        <!-- Start Screen -->
+        <section id="screen-home" class="screen active">
+            <h2 class="subtitle">מחשבון הסיכונים לגיימר הישראלי</h2>
+            <h1 class="main-title">ראנקד או ממ"ד</h1>
+
+            <p class="tagline" id="live-status">מתחבר לנתוני פיקוד העורף...</p>
+
+            <button class="btn primary cyber-btn" onclick="startSurvey()" id="start-btn" disabled>
+                <div class="btn-content">בדוק סטטוס 🎯</div>
+                <div class="btn-glitch"></div>
+            </button>
+
+            <!-- PayPal Link added here in the footer of Home screen -->
+            <a href="https://www.paypal.com/donate/?hosted_button_id=YE4YL7S82QUJJ" target="_blank"
+                rel="noopener noreferrer" class="donate-btn">
+                ☕ תרומה למפתח
+            </a>
+
+            <a href="legal.html" class="donate-btn" style="margin-top:0.5rem;">
+                ⚖️ תנאי שימוש ומדיניות פרטיות
+            </a>
+        </section>
+
+        <!-- Question 1: Game Type -->
+        <section id="screen-q1" class="screen">
+            <h2 class="question-title">לאיזה משחק אתה נכנס עכשיו?</h2>
+
+            <div class="game-input-container">
+                <input type="text" id="game-name" class="cyber-input" placeholder="לדוגמה: Overwatch או Dota 2"
+                    autocomplete="off">
+                <div id="autocomplete-list" class="autocomplete-items"></div>
+            </div>
+
+            <p class="desc mt-20" id="manual-select-desc" style="display: none;">או בחר את סגנון המשחק באופן ידני:</p>
+
+            <div class="options-grid" id="manual-options" style="display: none;">
+                <button class="option-card" onclick="selectQ1(10)">
+                    <span class="icon">🚀</span>
+                    <h3>משחק קצר</h3>
+                    <p>Brawl Stars, Rocket League</p>
+                    <span class="badge">~10 דק'</span>
+                </button>
+                <button class="option-card" onclick="selectQ1(30)">
+                    <span class="icon">🔫</span>
+                    <h3>תחרותי קלאסי</h3>
+                    <p>Valorant, CS2</p>
+                    <span class="badge">~40 דק'</span>
+                </button>
+                <button class="option-card" onclick="selectQ1(50)">
+                    <span class="icon">🧙‍♂️</span>
+                    <h3>MOBA / אסטרטגיה</h3>
+                    <p>LoL, Dota</p>
+                    <span class="badge">60+ דק'</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Question 2: Location -->
+        <section id="screen-q2" class="screen">
+            <h2 class="question-title">מה המיקום שלך?</h2>
+            <p class="desc" id="q2-desc">נתוני האזעקות מסונכרנים אונליין להיום.</p>
+
+            <div class="custom-select-wrapper">
+                <select id="location-select" class="cyber-select">
+                    <option value="" disabled selected>בחר אזור בארץ...</option>
+                    <option value="50">עוטף עזה, קו עימות / הצפון</option>
+                    <option value="30">גוש דן / תל אביב והמרכז</option>
+                    <option value="30">נשר / חיפה והקריות</option>
+                    <option value="10">ירושלים / יהודה ושומרון</option>
+                    <option value="20">באר שבע והנגב</option>
+                    <option value="0">אילת / הערבה</option>
+                </select>
+                <button class="btn primary w-100 mt-20" onclick="selectQ2()">אישור 📍</button>
+            </div>
+        </section>
+
+        <!-- Question 3: Rank Importance -->
+        <section id="screen-q3" class="screen">
+            <h2 class="question-title">כמה כואב לך על הראנק?</h2>
+
+            <div class="slider-container">
+                <label for="rank-slider" class="slider-label">
+                    <span class="low-importance">1 - בשביל הצחוקים</span>
+                    <span class="high-importance" id="slider-value">5</span>
+                    <span class="low-importance">10 - שובר מקלדת</span>
+                </label>
+                <input type="range" min="1" max="10" value="5" class="cyber-slider" id="rank-slider"
+                    oninput="updateSliderUI(this.value)">
+
+                <button class="btn primary mt-40 w-100" onclick="calculateResult()">חשב סיכון ⚠️</button>
+            </div>
+        </section>
+
+        <!-- Loading Screen -->
+        <section id="screen-loading" class="screen">
+            <div class="defuse-animation">
+                <div class="bomb-timer">00:00:00</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <p class="loading-text">מנתח סיכוני אזעקה ואובדן ELO...</p>
+            </div>
+        </section>
+
+        <!-- Result Screen -->
+        <section id="screen-result" class="screen">
+            <div class="result-card" id="result-box">
+                <h2 id="result-status" class="status-title orbitron">MISSION PASSED</h2>
+                <p id="result-desc" class="status-desc">טקסט דינאמי יופיע כאן</p>
+                <div class="status-meter">
+                    <div id="status-fill" class="status-fill"></div>
+                </div>
+                <!-- Game info output -->
+                <p class="chosen-game-text" id="result-game-info"></p>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn discord-btn" onclick="copyToClipboard()">
+                    שתף לדיסקורד / WhatsApp 📋
+                </button>
+                <button class="btn outline-btn" onclick="resetApp()">
+                    חישוב מחדש 🔄
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Audio Effects -->
+    <audio id="sfx-failed" src="https://www.myinstants.com/media/sounds/gta-sa-mission-passed.mp3"></audio>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

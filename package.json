@@ -1,0 +1,8 @@
+{
+  "name": "ranked-or-mamad",
+  "version": "1.0.0",
+  "description": "Risk calculator for Israeli gamers",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
