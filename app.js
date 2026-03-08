@@ -320,8 +320,36 @@ function selectQ2() {
     const moatza = inp.getAttribute('data-moatza') || '';
 
     // Risk Calculation based on location (Time & Radius Model)
-    let risk = 10; // default low base
-    let locationReasons = ["אזור המגורים מוסיף כברירת מחדל +10 נק'."];
+    let risk = 10;
+    let locationReasons = [];
+
+    // Base Geostatistical Risk (Static baseline before dynamic events)
+    const veryHighRiskRegions = ['קרית שמונה', 'גליל עליון', 'שער הנגב', 'אשכול', 'מבואות החרמון', 'מרום הגליל', 'מעלה יוסף', 'עמק הירדן', 'משגב'];
+    const highRiskRegions = ['תל אביב', 'צפת', 'כנרת', 'עכו', 'גולן', 'אשקלון', 'גוש דן', 'חיפה', 'קריות', 'רמת גן', 'חולון'];
+    const mediumRiskRegions = ['פתח תקווה', 'רמלה', 'רחובות', 'השרון', 'חדרה'];
+    const safeRegions = ['אילת', 'ערבה', 'מצפה רמון', 'ים המלח'];
+    const baselineRegions = ['באר שבע', 'ירושלים', 'דימונה', 'ירוחם'];
+
+    if (veryHighRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 40;
+        locationReasons.push(`🔥 אזור חזית: ${cityName} מתחיל מראש עם סיכון עורף גבוה (+40 נק').`);
+    } else if (highRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 30;
+        locationReasons.push(`🎯 אזור אסטרטגי (מרכז/צפון): ${cityName} מועד לטיווח קבוע (+30 נק').`);
+    } else if (mediumRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 20;
+        locationReasons.push(`⚠️ עורף משני: ${cityName} התחיל עם איום מופחת מעט (+20 נק').`);
+    } else if (safeRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 0;
+        locationReasons.push(`🍹 אזור בטוח עובדתית: העיר ${cityName} מתחילה מ-0 סיכון התחלתי!`);
+    } else if (baselineRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 10;
+        locationReasons.push(`🏜️ פריפריה מרוחקת: עיר בדירוג בסיסי ${cityName} (+10 נק').`);
+    } else {
+        // default 15
+        risk = 15;
+        locationReasons.push(`📍 דירוג אוכלוסייה כללי: איום התחלתי לפני אזעקות (+15 נק').`);
+    }
 
     const nowSeconds = Math.floor(Date.now() / 1000);
     const twoHoursLimit = nowSeconds - (2 * 60 * 60);
