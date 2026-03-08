@@ -319,37 +319,9 @@ function selectQ2() {
     const nafa = inp.getAttribute('data-nafa') || '';
     const moatza = inp.getAttribute('data-moatza') || '';
 
-    // Risk Calculation based on location (Time & Radius Model)
-    let risk = 10;
-    let locationReasons = [];
-
-    // Base Geostatistical Risk (Static baseline before dynamic events)
-    const veryHighRiskRegions = ['קרית שמונה', 'גליל עליון', 'שער הנגב', 'אשכול', 'מבואות החרמון', 'מרום הגליל', 'מעלה יוסף', 'עמק הירדן', 'משגב'];
-    const highRiskRegions = ['תל אביב', 'צפת', 'כנרת', 'עכו', 'גולן', 'אשקלון', 'גוש דן', 'חיפה', 'קריות', 'רמת גן', 'חולון'];
-    const mediumRiskRegions = ['פתח תקווה', 'רמלה', 'רחובות', 'השרון', 'חדרה'];
-    const safeRegions = ['אילת', 'ערבה', 'מצפה רמון', 'ים המלח'];
-    const baselineRegions = ['באר שבע', 'ירושלים', 'דימונה', 'ירוחם'];
-
-    if (veryHighRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 40;
-        locationReasons.push(`🔥 אזור חזית: ${cityName} מתחיל מראש עם סיכון עורף גבוה (+40 נק').`);
-    } else if (highRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 30;
-        locationReasons.push(`🎯 אזור אסטרטגי (מרכז/צפון): ${cityName} מועד לטיווח קבוע (+30 נק').`);
-    } else if (mediumRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 20;
-        locationReasons.push(`⚠️ עורף משני: ${cityName} התחיל עם איום מופחת מעט (+20 נק').`);
-    } else if (safeRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 0;
-        locationReasons.push(`🍹 אזור בטוח עובדתית: העיר ${cityName} מתחילה מ-0 סיכון התחלתי!`);
-    } else if (baselineRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 10;
-        locationReasons.push(`🏜️ פריפריה מרוחקת: עיר בדירוג בסיסי ${cityName} (+10 נק').`);
-    } else {
-        // default 15
-        risk = 15;
-        locationReasons.push(`📍 דירוג אוכלוסייה כללי: איום התחלתי לפני אזעקות (+15 נק').`);
-    }
+    // Risk Calculation based on location (Pure Time & Radius Model)
+    let risk = 0; // Pure starting point
+    let locationReasons = ["אזור המגורים מתחיל מ-0 סיכון, תלוי בנתוני אזעקות בלבד!"];
 
     const nowSeconds = Math.floor(Date.now() / 1000);
     const twoHoursLimit = nowSeconds - (2 * 60 * 60);
@@ -381,24 +353,25 @@ function selectQ2() {
     if (cityAlarms[cityName] && cityAlarms[cityName].count > 0) {
         const cData = cityAlarms[cityName];
 
-        // Volume: +5 points per alarm today
-        directRisk += (cData.count * 5);
-        locationReasons.push(`תיעוד חי: נרשמו ${cData.count} אזעקות היום ב-${cityName} (+${cData.count * 5} נק').`);
+        // Volume: +5 points per alarm today (Up to +40, increased weight)
+        const volumeScore = Math.min(cData.count * 8, 40);
+        directRisk += volumeScore;
+        locationReasons.push(`תיעוד חי: נרשמו ${cData.count} אזעקות היום ב-${cityName} (+${volumeScore} נק').`);
 
         // Freshness
         if (cData.lastAlert >= twoHoursLimit) {
-            directRisk += 40; // Critical Red
-            locationReasons.push(`התרעה חמה: האזעקה האחרונה הייתה בשעתיים האחרונות! מוסיף אזהרה קריטית (+40 נק').`);
+            directRisk += 50; // Critical Red
+            locationReasons.push(`התרעה חמה: האזעקה האחרונה הייתה בשעתיים האחרונות! מוסיף אזהרה קריטית (+50 נק').`);
         } else if (cData.lastAlert >= twelveHoursLimit) {
-            directRisk += 20; // Tense Yellow
-            locationReasons.push(`שרידי ירי: נרשמו אזעקות ב-12 השעות האחרונות. עירנות נדרשת (+20 נק').`);
+            directRisk += 25; // Tense Yellow
+            locationReasons.push(`שרידי ירי: נרשמו אזעקות ב-12 השעות האחרונות. עירנות נדרשת (+25 נק').`);
         }
     }
 
     risk += directRisk;
 
-    // Safety cap: Location risk cannot exceed 60 to prevent breaking the formula entirely
-    if (risk > 60) risk = 60;
+    // Safety cap: Location risk cannot exceed 85 to prevent completely overriding the game and rank multipliers, but let it be influential.
+    if (risk > 85) risk = 85;
 
     riskData.cityName = cityName;
     riskData.locationScore = risk;
