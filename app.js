@@ -198,13 +198,15 @@ async function fetchAlertData() {
             riskData.alarmsToday = data.totalRecentAlerts || 0;
 
             // Format time if available
-            let timeStr = "היום";
+            let lastAlarmStr = "";
             if (data.lastUpdateTimestamp) {
-                const date = new Date(data.lastUpdateTimestamp * 1000); // Unix timestamp is usually seconds in this API
-                timeStr = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+                const alarmDate = new Date(data.lastUpdateTimestamp * 1000);
+                lastAlarmStr = alarmDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
             }
 
-            statusEl.innerText = `✅ מחובר. סה"כ אזעקות היום: ${riskData.alarmsToday} (מעודכן ל-${timeStr})`;
+            const nowStr = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+            statusEl.innerText = `✅ מחובר. סה"כ אזעקות: ${riskData.alarmsToday} (סונכרן כעת: ${nowStr} | אזעקה אחרונה: ${lastAlarmStr})`;
             statusEl.style.color = 'var(--neon-green)';
 
             document.getElementById('q2-desc').innerText = `מערכת מחוברת: ${riskData.alarmsToday} התרעות נרשמו עד כה.`;
@@ -311,9 +313,9 @@ function selectQ2() {
 
     // Risk Calculation based on location
     let risk = 10; // default low
-    const highRiskRegions = ['צפת', 'כנרת', 'עכו', 'גולן', 'אשקלון', 'קרית שמונה', 'גליל עליון', 'שער הנגב', 'אשכול'];
-    const mediumRiskRegions = ['תל אביב', 'פתח תקווה', 'רמלה', 'רחובות', 'השרון', 'חיפה', 'חדרה'];
-    const lowMediumRiskRegions = ['באר שבע'];
+    const highRiskRegions = ['תל אביב', 'צפת', 'כנרת', 'עכו', 'גולן', 'אשקלון', 'קרית שמונה', 'גליל עליון', 'שער הנגב', 'אשכול', 'גוש דן'];
+    const mediumRiskRegions = ['פתח תקווה', 'רמלה', 'רחובות', 'השרון', 'חיפה', 'חדרה'];
+    const lowMediumRiskRegions = ['באר שבע', 'ירושלים'];
 
     if (highRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
         risk = 50;
