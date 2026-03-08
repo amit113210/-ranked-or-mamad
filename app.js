@@ -131,13 +131,14 @@ function calculateRiskLogicFromSaved() {
     let localAlarmsCount = 0;
     let localLastAlert = 0;
 
-    const baseCityName = cityName.split('-')[0].trim();
+    const baseCityName = (cityName || '').split('-')[0].trim();
 
     // Cities like Tel Aviv appear as "תל אביב - מרכז" in the API but "תל אביב - יפו" in the DB.
     // We check for substring matches in both directions
     for (const [cName, cData] of Object.entries(cityAlarms)) {
+        if (!cName) continue;
         const baseCName = cName.split('-')[0].trim();
-        if (baseCName === baseCityName || cName.includes(cityName) || cityName.includes(cName)) {
+        if (baseCName === baseCityName || cName.includes(baseCityName) || (cityName && cityName.includes(cName))) {
             localAlarmsCount += cData.count;
             if (cData.lastAlert > localLastAlert) {
                 localLastAlert = cData.lastAlert;
@@ -163,6 +164,8 @@ function calculateRiskLogicFromSaved() {
 
     if (risk > 85) risk = 85;
 
+    // IMPORTANT: In Quick Scan, we must preserve the overall structure 
+    // to match calculateResult's expectation.
     riskData.locationScore = risk;
     riskData.locationReasoning = locationReasons;
 
@@ -556,11 +559,12 @@ function selectQ2() {
     let localAlarmsCount = 0;
     let localLastAlert = 0;
 
-    const baseCityName = cityName.split('-')[0].trim();
+    const baseCityName = (cityName || '').split('-')[0].trim();
 
     for (const [cName, cData] of Object.entries(cityAlarms)) {
+        if (!cName) continue;
         const baseCName = cName.split('-')[0].trim();
-        if (baseCName === baseCityName || cName.includes(cityName) || cityName.includes(cName)) {
+        if (baseCName === baseCityName || cName.includes(baseCityName) || (cityName && cityName.includes(cName))) {
             localAlarmsCount += cData.count;
             if (cData.lastAlert > localLastAlert) {
                 localLastAlert = cData.lastAlert;
