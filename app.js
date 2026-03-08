@@ -25,7 +25,113 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAlertData();
     fetchGameDatabase();
     fetchCityDatabase();
+
+    // Check local storage for Quick Scan
+    checkLocalStorageParams();
 });
+
+function checkLocalStorageParams() {
+    const savedDataStr = localStorage.getItem('rankedMamadData');
+    if (savedDataStr) {
+        try {
+            const savedData = JSON.parse(savedDataStr);
+            if (savedData.gameName && savedData.cityName) {
+                const qsContainer = document.getElementById('quick-scan-container');
+                const qsInfo = document.getElementById('quick-scan-info');
+
+                if (qsContainer && qsInfo) {
+                    qsInfo.innerText = `${savedData.gameName} ב-${savedData.cityName}`;
+                    qsContainer.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            console.error("Error reading locastorage", e);
+        }
+    }
+}
+
+function runQuickScan() {
+    const savedDataStr = localStorage.getItem('rankedMamadData');
+    if (savedDataStr) {
+        try {
+            const savedData = JSON.parse(savedDataStr);
+            riskData = { ...riskData, ...savedData }; // Merge saved data into current state
+
+            // Assume default rank pressure of 5 if bypassing Q3
+            if (!riskData.rankMultiplier) {
+                riskData.rankMultiplier = 1.0;
+            }
+            // Trigger calculation directly based on saved city
+            calculateRiskLogicFromSaved();
+
+        } catch (e) {
+            console.error(e);
+            startSurvey();
+        }
+    } else {
+        startSurvey();
+    }
+}
+
+function calculateRiskLogicFromSaved() {
+    // Re-run the city selection logic to populate immediate risk data before jumping to calc
+    const cityName = riskData.cityName;
+    const nafa = riskData.nafa || '';
+    const moatza = riskData.moatza || '';
+
+    // Risk Calculation based on location (Pure Time & Radius Model)
+    let risk = 0; // Pure starting point
+    let locationReasons = ["אזור המגורים מתחיל מ-0 סיכון, תלוי בנתוני אזעקות בלבד!"];
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const twoHoursLimit = nowSeconds - (2 * 60 * 60);
+    const twelveHoursLimit = nowSeconds - (12 * 60 * 60);
+
+    // 1. Splash Damage
+    let splashDamage = 0;
+
+    if (moatza && moatza !== "חסר" && moatza !== " ") {
+        for (const [cName, cData] of Object.entries(cityAlarms)) {
+            if (cData.count > 0 && cName !== cityName) {
+                const neighborCityInfo = cityList.find(c => c.name === cName);
+                if (neighborCityInfo && neighborCityInfo.moatza === moatza) {
+                    splashDamage = 15;
+                    locationReasons.push(`נזק היקפי: בוצע ירי לעבר ${cName} (שנמצאת איתך באותה מועצה אזורית - ${moatza}), זה מוסיף בסביבה הקרובה עוד +15 נק'.`);
+                    break;
+                }
+            }
+        }
+    }
+    risk += splashDamage;
+
+    // 2. Direct Hit Volume & Freshness
+    let directRisk = 0;
+    if (cityAlarms[cityName] && cityAlarms[cityName].count > 0) {
+        const cData = cityAlarms[cityName];
+
+        const volumeScore = Math.min(cData.count * 8, 40);
+        directRisk += volumeScore;
+        locationReasons.push(`תיעוד חי: נרשמו ${cData.count} אזעקות היום ב-${cityName} (+${volumeScore} נק').`);
+
+        if (cData.lastAlert >= twoHoursLimit) {
+            directRisk += 50;
+            locationReasons.push(`התרעה חמה: האזעקה האחרונה הייתה בשעתיים האחרונות! מוסיף אזהרה קריטית (+50 נק').`);
+        } else if (cData.lastAlert >= twelveHoursLimit) {
+            directRisk += 25;
+            locationReasons.push(`שרידי ירי: נרשמו אזעקות ב-12 השעות האחרונות. עירנות נדרשת (+25 נק').`);
+        }
+    }
+
+    risk += directRisk;
+
+    if (risk > 85) risk = 85;
+
+    riskData.locationScore = risk;
+    riskData.locationReasoning = locationReasons;
+
+    // Run final calculation
+    calculateResult();
+}
 
 async function fetchCityDatabase() {
     try {
@@ -186,6 +292,63 @@ function setupCityAutocomplete() {
             if (x) x.innerHTML = '';
         }
     });
+}
+
+function locateUserGPS() {
+    const btn = document.getElementById('locate-me-btn');
+    const inp = document.getElementById('city-name');
+
+    if (!navigator.geolocation) {
+        alert("דפדפן זה אינו תומך באיתור מיקום.");
+        return;
+    }
+
+    btn.innerText = "⏳";
+    btn.disabled = true;
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        try {
+            // Use a free reverse geocoding API (BigDataCloud is free for client-side without API key)
+            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=he`);
+            const data = await res.json();
+
+            // Extract the city/locality in Hebrew
+            const resolvedCityName = data.locality || data.city;
+
+            if (resolvedCityName) {
+                // Try to find it in our exact cityList to get Nafa and Moatza
+                const matchedCity = cityList.find(c => resolvedCityName.includes(c.name) || c.name.includes(resolvedCityName));
+
+                if (matchedCity) {
+                    inp.value = matchedCity.name;
+                    inp.setAttribute('data-nafa', matchedCity.nafa);
+                    inp.setAttribute('data-moatza', matchedCity.moatza);
+                    btn.innerText = "✅";
+                } else {
+                    inp.value = resolvedCityName; // Fallback to string if no exact metadata
+                    btn.innerText = "✅";
+                }
+            } else {
+                alert("לא הצלחנו לאתר עיר מדויקת לפי המיקום שלך.");
+                btn.innerText = "📍";
+            }
+        } catch (e) {
+            console.error("GPS Reverse Geocode Error", e);
+            alert("שגיאה בפענוח מיקום ה-GPS.");
+            btn.innerText = "📍";
+        }
+        btn.disabled = false;
+
+        setTimeout(() => { btn.innerText = "📍"; }, 3000);
+
+    }, (error) => {
+        alert("לא אישרת גישה למיקום או שיש בעיית GPS.");
+        btn.innerText = "📍";
+        btn.disabled = false;
+    }, { timeout: 10000 });
 }
 
 async function fetchAlertData() {
@@ -404,6 +567,19 @@ function calculateResult() {
 
     // We no longer add generic "alarmsToday" risk, because locationScore is now highly accurate via the new model
     riskData.finalScore = baseScore * riskData.rankMultiplier;
+
+    // Save to Local Storage for Quick Scan 
+    if (riskData.cityName && riskData.gameName) {
+        localStorage.setItem('rankedMamadData', JSON.stringify({
+            gameName: riskData.gameName,
+            gameLengthScore: riskData.gameLengthScore,
+            gameReasoning: riskData.gameReasoning,
+            cityName: riskData.cityName,
+            nafa: riskData.nafa,
+            moatza: riskData.moatza,
+            rankMultiplier: riskData.rankMultiplier
+        }));
+    }
 
     startLoading();
 }
