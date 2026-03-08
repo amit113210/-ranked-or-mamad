@@ -128,17 +128,29 @@ function calculateRiskLogicFromSaved() {
 
     // 2. Direct Hit Volume & Freshness
     let directRisk = 0;
-    if (cityAlarms[cityName] && cityAlarms[cityName].count > 0) {
-        const cData = cityAlarms[cityName];
+    let localAlarmsCount = 0;
+    let localLastAlert = 0;
 
-        const volumeScore = Math.min(cData.count * 8, 40);
+    // Cities like Tel Aviv appear as "תל אביב - מרכז" in the API but "תל אביב - יפו" in the DB.
+    // We check for substring matches in both directions
+    for (const [cName, cData] of Object.entries(cityAlarms)) {
+        if (cName.includes(cityName) || cityName.includes(cName)) {
+            localAlarmsCount += cData.count;
+            if (cData.lastAlert > localLastAlert) {
+                localLastAlert = cData.lastAlert;
+            }
+        }
+    }
+
+    if (localAlarmsCount > 0) {
+        const volumeScore = Math.min(localAlarmsCount * 8, 40);
         directRisk += volumeScore;
-        locationReasons.push(`תיעוד חי: נרשמו ${cData.count} אזעקות היום ב-${cityName} (+${volumeScore} נק').`);
+        locationReasons.push(`תיעוד חי: נרשמו ${localAlarmsCount} אזעקות היום באזורך (+${volumeScore} נק').`);
 
-        if (cData.lastAlert >= twoHoursLimit) {
+        if (localLastAlert >= twoHoursLimit) {
             directRisk += 50;
             locationReasons.push(`התרעה חמה: האזעקה האחרונה הייתה בשעתיים האחרונות! מוסיף אזהרה קריטית (+50 נק').`);
-        } else if (cData.lastAlert >= twelveHoursLimit) {
+        } else if (localLastAlert >= twelveHoursLimit) {
             directRisk += 25;
             locationReasons.push(`שרידי ירי: נרשמו אזעקות ב-12 השעות האחרונות. עירנות נדרשת (+25 נק').`);
         }
@@ -538,19 +550,29 @@ function selectQ2() {
 
     // 2. Direct Hit Volume & Freshness
     let directRisk = 0;
-    if (cityAlarms[cityName] && cityAlarms[cityName].count > 0) {
-        const cData = cityAlarms[cityName];
+    let localAlarmsCount = 0;
+    let localLastAlert = 0;
 
+    for (const [cName, cData] of Object.entries(cityAlarms)) {
+        if (cName.includes(cityName) || cityName.includes(cName)) {
+            localAlarmsCount += cData.count;
+            if (cData.lastAlert > localLastAlert) {
+                localLastAlert = cData.lastAlert;
+            }
+        }
+    }
+
+    if (localAlarmsCount > 0) {
         // Volume: +5 points per alarm today (Up to +40, increased weight)
-        const volumeScore = Math.min(cData.count * 8, 40);
+        const volumeScore = Math.min(localAlarmsCount * 8, 40);
         directRisk += volumeScore;
-        locationReasons.push(`תיעוד חי: נרשמו ${cData.count} אזעקות היום ב-${cityName} (+${volumeScore} נק').`);
+        locationReasons.push(`תיעוד חי: נרשמו ${localAlarmsCount} אזעקות היום באזורך (+${volumeScore} נק').`);
 
         // Freshness
-        if (cData.lastAlert >= twoHoursLimit) {
+        if (localLastAlert >= twoHoursLimit) {
             directRisk += 50; // Critical Red
             locationReasons.push(`התרעה חמה: האזעקה האחרונה הייתה בשעתיים האחרונות! מוסיף אזהרה קריטית (+50 נק').`);
-        } else if (cData.lastAlert >= twelveHoursLimit) {
+        } else if (localLastAlert >= twelveHoursLimit) {
             directRisk += 25; // Tense Yellow
             locationReasons.push(`שרידי ירי: נרשמו אזעקות ב-12 השעות האחרונות. עירנות נדרשת (+25 נק').`);
         }
