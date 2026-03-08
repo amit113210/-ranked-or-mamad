@@ -1,20 +1,4 @@
-import { Redis } from '@upstash/redis';
-
-// Initialize Redis client. It will automatically use UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN from environment variables.
-// We wrap it in a try-catch to allow local development to gracefully fall back if keys aren't set yet.
-let redis;
-try {
-    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-        redis = new Redis({
-            url: process.env.UPSTASH_REDIS_REST_URL,
-            token: process.env.UPSTASH_REDIS_REST_TOKEN,
-        });
-    }
-} catch (e) {
-    console.warn("Redis initialization skipped (missing env vars)");
-}
-
-export default async function handler(req, res) {
+import { Redis } from '@upstash/redis'; export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true)
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -27,6 +11,27 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') {
         res.status(200).end()
         return
+    }
+
+    // Initialize inside the handler to ensure Vercel env vars are fully loaded at runtime
+    let redis = null;
+    try {
+        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+            redis = new Redis({
+                url: process.env.UPSTASH_REDIS_REST_URL,
+                token: process.env.UPSTASH_REDIS_REST_TOKEN,
+            });
+        } else {
+            // Also accept standard kv environment variables in case Upstash linked as KV
+            if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+                redis = new Redis({
+                    url: process.env.KV_REST_API_URL,
+                    token: process.env.KV_REST_API_TOKEN,
+                });
+            }
+        }
+    } catch (e) {
+        console.warn("Redis initialization skipped (missing env vars)", e.message);
     }
 
     try {
