@@ -328,18 +328,20 @@ function selectQ2() {
     const twelveHoursLimit = nowSeconds - (12 * 60 * 60);
 
     // 1. Splash Damage (Is the surrounding region under attack today?)
-    // We check if any city with the exact same 'nafa' or 'moatza' has an alarm today.
+    // We check if any city with the exact same 'moatza' (Regional Council) has an alarm today.
+    // 'nafa' (District) like Beer Sheva is too large (covers half the country including Eilat).
     let splashDamage = 0;
-    if (nafa || moatza) {
+
+    if (moatza && moatza !== "חסר" && moatza !== " ") {
         for (const [cName, cData] of Object.entries(cityAlarms)) {
             if (cData.count > 0 && cName !== cityName) {
-                // Find this city in the general city database to match its nafa/moatza
+                // Find this city in the general city database to match its moatza
                 const neighborCityInfo = cityList.find(c => c.name === cName);
                 if (neighborCityInfo) {
-                    if ((nafa && neighborCityInfo.nafa === nafa) ||
-                        (moatza && neighborCityInfo.moatza === moatza)) {
+                    // Only apply splash damage if they belong to the EXACT SAME regional council
+                    if (neighborCityInfo.moatza === moatza) {
                         splashDamage = 15; // Collateral Risk
-                        locationReasons.push(`נזק היקפי: בוצע ירי לעבר ${cName} (סביבה גיאוגרפית), זה מסיף עוד +15 נק'.`);
+                        locationReasons.push(`נזק היקפי: בוצע ירי לעבר ${cName} (שנמצאת איתך באותה מועצה אזורית - ${moatza}), זה מוסיף בסביבה הקרובה עוד +15 נק'.`);
                         break;
                     }
                 }
