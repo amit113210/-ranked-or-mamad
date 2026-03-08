@@ -130,7 +130,7 @@ function calculateRiskLogicFromSaved() {
     riskData.locationReasoning = locationReasons;
 
     // Run final calculation
-    calculateResult();
+    calculateResult(true);
 }
 
 async function fetchCityDatabase() {
@@ -550,16 +550,18 @@ function updateSliderUI(val) {
 }
 
 // Calculate logic
-function calculateResult() {
-    const rankVal = parseInt(document.getElementById('rank-slider').value, 10);
+function calculateResult(isQuickScan = false) {
+    if (!isQuickScan) {
+        const rankVal = parseInt(document.getElementById('rank-slider').value, 10);
 
-    // Convert 1-10 to multiplier 0.5 - 1.5
-    riskData.rankMultiplier = 0.5 + ((rankVal - 1) * (1.0 / 9));
+        // Convert 1-10 to multiplier 0.5 - 1.5
+        riskData.rankMultiplier = 0.5 + ((rankVal - 1) * (1.0 / 9));
 
-    if (riskData.rankMultiplier > 1.0) {
-        riskData.rankReasoning = `לחץ ראנק מחושב כמכפיל חומרה של x${riskData.rankMultiplier.toFixed(2)}`;
-    } else {
-        riskData.rankReasoning = `אתה לא לחוץ על הראנק ולכן מקבל הקלה בסיכון פי x${riskData.rankMultiplier.toFixed(2)}`;
+        if (riskData.rankMultiplier > 1.0) {
+            riskData.rankReasoning = `לחץ ראנק מחושב כמכפיל חומרה של x${riskData.rankMultiplier.toFixed(2)}`;
+        } else {
+            riskData.rankReasoning = `אתה לא לחוץ על הראנק ולכן מקבל הקלה בסיכון פי x${riskData.rankMultiplier.toFixed(2)}`;
+        }
     }
 
     // Base score from answers
