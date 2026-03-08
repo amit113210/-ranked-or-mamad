@@ -131,10 +131,13 @@ function calculateRiskLogicFromSaved() {
     let localAlarmsCount = 0;
     let localLastAlert = 0;
 
+    const baseCityName = cityName.split('-')[0].trim();
+
     // Cities like Tel Aviv appear as "תל אביב - מרכז" in the API but "תל אביב - יפו" in the DB.
     // We check for substring matches in both directions
     for (const [cName, cData] of Object.entries(cityAlarms)) {
-        if (cName.includes(cityName) || cityName.includes(cName)) {
+        const baseCName = cName.split('-')[0].trim();
+        if (baseCName === baseCityName || cName.includes(cityName) || cityName.includes(cName)) {
             localAlarmsCount += cData.count;
             if (cData.lastAlert > localLastAlert) {
                 localLastAlert = cData.lastAlert;
@@ -553,8 +556,11 @@ function selectQ2() {
     let localAlarmsCount = 0;
     let localLastAlert = 0;
 
+    const baseCityName = cityName.split('-')[0].trim();
+
     for (const [cName, cData] of Object.entries(cityAlarms)) {
-        if (cName.includes(cityName) || cityName.includes(cName)) {
+        const baseCName = cName.split('-')[0].trim();
+        if (baseCName === baseCityName || cName.includes(cityName) || cityName.includes(cName)) {
             localAlarmsCount += cData.count;
             if (cData.lastAlert > localLastAlert) {
                 localLastAlert = cData.lastAlert;
@@ -607,6 +613,17 @@ function calculateResult(isQuickScan = false) {
         } else {
             riskData.rankReasoning = `אתה לא לחוץ על הראנק ולכן מקבל הקלה בסיכון פי x${riskData.rankMultiplier.toFixed(2)}`;
         }
+    } else {
+        // Construct the reasoning if it was missing from an older LocalStorage save
+        if (!riskData.rankReasoning) {
+            if (riskData.rankMultiplier > 1.0) {
+                riskData.rankReasoning = `לחץ ראנק מחושב כמכפיל חומרה של x${riskData.rankMultiplier.toFixed(2)}`;
+            } else if (riskData.rankMultiplier < 1.0) {
+                riskData.rankReasoning = `אתה לא לחוץ על הראנק ולכן מקבל הקלה בסיכון פי x${riskData.rankMultiplier.toFixed(2)}`;
+            } else {
+                riskData.rankReasoning = `לחץ ראנק על הגדרות ברירת מחדל (סיכון רגיל).`;
+            }
+        }
     }
 
     // Base score from answers
@@ -624,7 +641,8 @@ function calculateResult(isQuickScan = false) {
             cityName: riskData.cityName,
             nafa: riskData.nafa,
             moatza: riskData.moatza,
-            rankMultiplier: riskData.rankMultiplier
+            rankMultiplier: riskData.rankMultiplier,
+            rankReasoning: riskData.rankReasoning
         }));
     }
 
