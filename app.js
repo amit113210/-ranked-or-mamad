@@ -14,6 +14,7 @@ const RED_SOUND = document.getElementById('sfx-failed');
 // Game autocomplete data
 let gameList = [];
 let cityList = [];
+let cityAlarms = {}; // Stores our dynamic risk map
 
 // Fetch Live Data on Load
 document.addEventListener('DOMContentLoaded', () => {
@@ -196,9 +197,10 @@ async function fetchAlertData() {
 
         if (data.success) {
             riskData.alarmsToday = data.totalRecentAlerts || 0;
+            if (data.cityAlarms) cityAlarms = data.cityAlarms;
 
             // Format time if available
-            let lastAlarmStr = "";
+            let lastAlarmStr = "אין";
             if (data.lastUpdateTimestamp) {
                 const alarmDate = new Date(data.lastUpdateTimestamp * 1000);
                 lastAlarmStr = alarmDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
@@ -311,19 +313,53 @@ function selectQ2() {
     const nafa = inp.getAttribute('data-nafa') || '';
     const moatza = inp.getAttribute('data-moatza') || '';
 
-    // Risk Calculation based on location
-    let risk = 10; // default low
-    const highRiskRegions = ['תל אביב', 'צפת', 'כנרת', 'עכו', 'גולן', 'אשקלון', 'קרית שמונה', 'גליל עליון', 'שער הנגב', 'אשכול', 'גוש דן'];
-    const mediumRiskRegions = ['פתח תקווה', 'רמלה', 'רחובות', 'השרון', 'חיפה', 'חדרה'];
-    const lowMediumRiskRegions = ['באר שבע', 'ירושלים'];
+    // Risk Calculation based on location (Time & Radius Model)
+    let risk = 10; // default low base
 
-    if (highRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 50;
-    } else if (mediumRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 30;
-    } else if (lowMediumRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
-        risk = 20;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const twoHoursLimit = nowSeconds - (2 * 60 * 60);
+    const twelveHoursLimit = nowSeconds - (12 * 60 * 60);
+
+    // 1. Splash Damage (Is the surrounding region under attack today?)
+    // We check if any city with the exact same 'nafa' or 'moatza' has an alarm today.
+    let splashDamage = 0;
+    if (nafa || moatza) {
+        for (const [cName, cData] of Object.entries(cityAlarms)) {
+            if (cData.count > 0 && cName !== cityName) {
+                // Find this city in the general city database to match its nafa/moatza
+                const neighborCityInfo = cityList.find(c => c.name === cName);
+                if (neighborCityInfo) {
+                    if ((nafa && neighborCityInfo.nafa === nafa) ||
+                        (moatza && neighborCityInfo.moatza === moatza)) {
+                        splashDamage = 15; // Collateral Risk
+                        break;
+                    }
+                }
+            }
+        }
     }
+    risk += splashDamage;
+
+    // 2. Direct Hit Volume & Freshness
+    let directRisk = 0;
+    if (cityAlarms[cityName] && cityAlarms[cityName].count > 0) {
+        const cData = cityAlarms[cityName];
+
+        // Volume: +5 points per alarm today
+        directRisk += (cData.count * 5);
+
+        // Freshness
+        if (cData.lastAlert >= twoHoursLimit) {
+            directRisk += 40; // Critical Red
+        } else if (cData.lastAlert >= twelveHoursLimit) {
+            directRisk += 20; // Tense Yellow
+        }
+    }
+
+    risk += directRisk;
+
+    // Safety cap: Location risk cannot exceed 60 to prevent breaking the formula entirely
+    if (risk > 60) risk = 60;
 
     riskData.locationScore = risk;
     showScreen('screen-q3');
@@ -344,11 +380,7 @@ function calculateResult() {
     // Base score from answers
     let baseScore = riskData.gameLengthScore + riskData.locationScore;
 
-    // Add dynamic risk from today's real alarms
-    // Cap adding maximum 30 points to not overwhelm the system
-    let dynamicAlarmRisk = Math.min(riskData.alarmsToday * 2, 30);
-    baseScore += dynamicAlarmRisk;
-
+    // We no longer add generic "alarmsToday" risk, because locationScore is now highly accurate via the new model
     riskData.finalScore = baseScore * riskData.rankMultiplier;
 
     startLoading();
