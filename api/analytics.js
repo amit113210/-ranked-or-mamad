@@ -1,11 +1,20 @@
-// A simple mock analytics endpoint to keep track of visits.
-// In a real Vercel environment, you would connect this to Redis/KV.
-// Here we return a static but slightly growing number for demonstration.
+import { Redis } from '@upstash/redis';
 
-let visitsBase = 1204; // Started at some arbitrary number
-let lastUpdate = Date.now();
+// Initialize Redis client. It will automatically use UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN from environment variables.
+// We wrap it in a try-catch to allow local development to gracefully fall back if keys aren't set yet.
+let redis;
+try {
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+        redis = new Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        });
+    }
+} catch (e) {
+    console.warn("Redis initialization skipped (missing env vars)");
+}
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true)
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -20,18 +29,24 @@ export default function handler(req, res) {
         return
     }
 
-    // Simulate growth based on time passed
-    const now = Date.now();
-    const hoursPassed = (now - lastUpdate) / (1000 * 60 * 60);
-    
-    // Increment visit by a random factor over time
-    visitsBase += Math.floor(hoursPassed * (Math.random() * 10 + 5)); 
-    // And add 1 for this actual visit
-    visitsBase += 1;
-    lastUpdate = now;
+    try {
+        let visits = 1204; // Baseline fallback
 
-    res.status(200).json({
-        success: true,
-        visits: visitsBase
-    });
+        if (redis) {
+            // Increment the 'visitor_count' key atomically
+            visits = await redis.incr('visitor_count');
+        }
+
+        res.status(200).json({
+            success: true,
+            visits: visits
+        });
+    } catch (error) {
+        console.error("Redis KV Error:", error);
+        // Fallback gracefully so the UI doesn't crash
+        res.status(200).json({
+            success: true,
+            visits: 1204
+        });
+    }
 }

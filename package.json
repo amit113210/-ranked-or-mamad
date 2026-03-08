@@ -4,5 +4,8 @@
   "description": "Risk calculator for Israeli gamers",
   "scripts": {
     "start": "npx serve ."
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.36.3"
   }
 }
