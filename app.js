@@ -13,12 +13,31 @@ const RED_SOUND = document.getElementById('sfx-failed');
 
 // Game autocomplete data
 let gameList = [];
+let cityList = [];
 
 // Fetch Live Data on Load
 document.addEventListener('DOMContentLoaded', () => {
     fetchAlertData();
     fetchGameDatabase();
+    fetchCityDatabase();
 });
+
+async function fetchCityDatabase() {
+    try {
+        const res = await fetch('https://data.gov.il/api/3/action/datastore_search?resource_id=d4901968-dad3-4845-a9b0-a57d027f11ab&limit=1500');
+        const data = await res.json();
+        if (data.success && data.result && data.result.records) {
+            cityList = data.result.records.map(record => ({
+                name: (record['שם_ישוב'] || '').trim().replace(/ \)\w+\(/g, ''), // Clean name
+                nafa: (record['שם_נפה'] || '').trim(),
+                moatza: (record['שם_מועצה'] || '').trim()
+            })).filter(c => c.name);
+            setupCityAutocomplete();
+        }
+    } catch (e) {
+        console.error("Failed to load cities db", e);
+    }
+}
 
 async function fetchGameDatabase() {
     try {
@@ -112,6 +131,54 @@ function setupAutocomplete() {
     document.addEventListener("click", function (e) {
         if (e.target.id !== "game-name") {
             closeAllLists();
+        }
+    });
+}
+
+function setupCityAutocomplete() {
+    const inp = document.getElementById("city-name");
+
+    inp.addEventListener("input", function (e) {
+        let a, b, i, val = this.value;
+        const listDiv = document.getElementById("city-autocomplete-list");
+        if (listDiv) listDiv.innerHTML = '';
+
+        if (!val) return false;
+
+        a = document.getElementById("city-autocomplete-list");
+        a.innerHTML = '';
+
+        let matches = 0;
+        for (i = 0; i < cityList.length; i++) {
+            if (matches < 6 && cityList[i].name.startsWith(val)) {
+                b = document.createElement("DIV");
+
+                const prefix = cityList[i].name.substring(0, val.length);
+                const suffix = cityList[i].name.substring(val.length);
+
+                b.innerHTML = `<strong>${prefix}</strong>${suffix}`;
+                b.innerHTML += `<span class="genre-badge">${cityList[i].nafa}</span>`;
+                b.innerHTML += `<input type='hidden' value='${cityList[i].name.replace(/'/g, "&#39;")}' data-nafa='${cityList[i].nafa}' data-moatza='${cityList[i].moatza}'>`;
+
+                b.addEventListener("click", function (e) {
+                    const inputElement = this.getElementsByTagName("input")[0];
+                    inp.value = inputElement.value;
+                    inp.setAttribute('data-nafa', inputElement.getAttribute('data-nafa'));
+                    inp.setAttribute('data-moatza', inputElement.getAttribute('data-moatza'));
+
+                    const x = document.getElementById("city-autocomplete-list");
+                    if (x) x.innerHTML = '';
+                });
+                a.appendChild(b);
+                matches++;
+            }
+        }
+    });
+
+    document.addEventListener("click", function (e) {
+        if (e.target.id !== "city-name") {
+            const x = document.getElementById("city-autocomplete-list");
+            if (x) x.innerHTML = '';
         }
     });
 }
@@ -232,12 +299,31 @@ function selectQ1(score) {
 
 // Q2 Selection
 function selectQ2() {
-    const select = document.getElementById('location-select');
-    if (!select.value) {
-        alert("נא לבחור מיקום כדי להמשיך.");
+    const inp = document.getElementById('city-name');
+    const cityName = inp.value.trim();
+    if (!cityName) {
+        alert("נא להזין עיר או אזור כדי להמשיך.");
         return;
     }
-    riskData.locationScore = parseInt(select.value, 10);
+
+    const nafa = inp.getAttribute('data-nafa') || '';
+    const moatza = inp.getAttribute('data-moatza') || '';
+
+    // Risk Calculation based on location
+    let risk = 10; // default low
+    const highRiskRegions = ['צפת', 'כנרת', 'עכו', 'גולן', 'אשקלון', 'קרית שמונה', 'גליל עליון', 'שער הנגב', 'אשכול'];
+    const mediumRiskRegions = ['תל אביב', 'פתח תקווה', 'רמלה', 'רחובות', 'השרון', 'חיפה', 'חדרה'];
+    const lowMediumRiskRegions = ['באר שבע'];
+
+    if (highRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 50;
+    } else if (mediumRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 30;
+    } else if (lowMediumRiskRegions.some(r => nafa.includes(r) || moatza.includes(r) || cityName.includes(r))) {
+        risk = 20;
+    }
+
+    riskData.locationScore = risk;
     showScreen('screen-q3');
 }
 
@@ -380,7 +466,12 @@ function resetApp() {
 
     // Reset UI
     document.getElementById('game-name').value = '';
-    document.getElementById('location-select').selectedIndex = 0;
+    const cityInput = document.getElementById('city-name');
+    if (cityInput) {
+        cityInput.value = '';
+        cityInput.removeAttribute('data-nafa');
+        cityInput.removeAttribute('data-moatza');
+    }
     document.getElementById('rank-slider').value = 5;
     updateSliderUI(5);
 

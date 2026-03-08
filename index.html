@@ -84,16 +84,10 @@
             <h2 class="question-title">מה המיקום שלך?</h2>
             <p class="desc" id="q2-desc">נתוני האזעקות מסונכרנים אונליין להיום.</p>
 
-            <div class="custom-select-wrapper">
-                <select id="location-select" class="cyber-select">
-                    <option value="" disabled selected>בחר אזור בארץ...</option>
-                    <option value="50">עוטף עזה, קו עימות / הצפון</option>
-                    <option value="30">גוש דן / תל אביב והמרכז</option>
-                    <option value="30">נשר / חיפה והקריות</option>
-                    <option value="10">ירושלים / יהודה ושומרון</option>
-                    <option value="20">באר שבע והנגב</option>
-                    <option value="0">אילת / הערבה</option>
-                </select>
+            <div class="custom-select-wrapper" style="position:relative;">
+                <input type="text" id="city-name" class="cyber-select"
+                    placeholder="הקלד שם עיר/יישוב (לדוגמה: תל אביב)..." autocomplete="off">
+                <div id="city-autocomplete-list" class="autocomplete-items"></div>
                 <button class="btn primary w-100 mt-20" onclick="selectQ2()">אישור 📍</button>
             </div>
         </section>
