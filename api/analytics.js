@@ -15,6 +15,7 @@ export default async function handler(req, res) {
 
     try {
         let visits = 1204; // Baseline fallback
+        let debugMsg = "All good";
 
         // In Vercel, when you link Upstash Redis / Vercel KV, it exposes these two variables natively
         const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -38,22 +39,26 @@ export default async function handler(req, res) {
                     visits = parseInt(data.result, 10);
                 }
             } else {
+                debugMsg = `REST Error: ${response.status} ${response.statusText}`;
                 console.error("KV REST Failed:", await response.text());
             }
         } else {
+            debugMsg = "Missing environment variables: KV_REST_API_URL or UPSTASH_REDIS_REST_URL";
             console.warn("Analytics: No KV environment variables detected.");
         }
 
         res.status(200).json({
             success: true,
-            visits: visits
+            visits: visits,
+            debug: debugMsg
         });
     } catch (error) {
         console.error("Redis REST Error:", error);
         // Fallback gracefully so the UI doesn't crash
         res.status(200).json({
             success: true,
-            visits: 1204
+            visits: 1204,
+            debug: `Code Error: ${error.message}`
         });
     }
 }
