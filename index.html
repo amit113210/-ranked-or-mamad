@@ -108,74 +108,74 @@
             <div id="city-autocomplete-list" class="autocomplete-items" style="position:relative; margin-top:-10px;">
             </div>
             <button class="btn primary w-100 mt-20" onclick="selectQ2()">אישור 📍</button>
-    </div>
-    <button class="btn outline-btn mt-20" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem;"
-        onclick="showScreen('screen-q1')">⬅️ חזור אחורה</button>
-    <button class="btn outline-btn mt-20" style="margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;"
-        onclick="resetApp()">🏠 חזור למסך הבית</button>
-    </section>
+            <button class="btn outline-btn mt-20" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="showScreen('screen-q1')">⬅️ חזור אחורה</button>
+            <button class="btn outline-btn mt-20" style="margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="resetApp()">🏠 חזור למסך הבית</button>
+        </section>
 
-    <!-- Question 3: Rank Importance -->
-    <section id="screen-q3" class="screen">
-        <h2 class="question-title">כמה כואב לך על הראנק?</h2>
+        <!-- Question 3: Rank Importance -->
+        <section id="screen-q3" class="screen">
+            <h2 class="question-title">כמה כואב לך על הראנק?</h2>
 
-        <div class="slider-container">
-            <label for="rank-slider" class="slider-label">
-                <span class="low-importance">1 - בשביל הצחוקים</span>
-                <span class="high-importance" id="slider-value">5</span>
-                <span class="low-importance">10 - שובר מקלדת</span>
-            </label>
-            <input type="range" min="1" max="10" value="5" class="cyber-slider" id="rank-slider"
-                oninput="updateSliderUI(this.value)">
+            <div class="slider-container">
+                <label for="rank-slider" class="slider-label">
+                    <span class="low-importance">1 - בשביל הצחוקים</span>
+                    <span class="high-importance" id="slider-value">5</span>
+                    <span class="low-importance">10 - שובר מקלדת</span>
+                </label>
+                <input type="range" min="1" max="10" value="5" class="cyber-slider" id="rank-slider"
+                    oninput="updateSliderUI(this.value)">
 
-            <button class="btn primary mt-40 w-100" onclick="calculateResult()">חשב סיכון ⚠️</button>
-        </div>
-
-        <button class="btn outline-btn mt-20" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem;"
-            onclick="showScreen('screen-q2')">⬅️ חזור אחורה</button>
-        <button class="btn outline-btn mt-20" style="margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;"
-            onclick="resetApp()">🏠 חזור למסך הבית</button>
-    </section>
-
-    <!-- Loading Screen -->
-    <section id="screen-loading" class="screen">
-        <div class="defuse-animation">
-            <div class="bomb-timer">00:00:00</div>
-            <div class="progress-bar-container">
-                <div class="progress-bar-fill"></div>
+                <button class="btn primary mt-40 w-100" onclick="calculateResult()">חשב סיכון ⚠️</button>
             </div>
-            <p class="loading-text">מנתח סיכוני אזעקה ואובדן ELO...</p>
-        </div>
-    </section>
 
-    <!-- Result Screen -->
-    <section id="screen-result" class="screen">
-        <div class="result-card" id="result-box">
-            <h2 id="result-status" class="status-title orbitron">MISSION PASSED</h2>
-            <h3 id="result-percentage" style="font-size: 2.5rem; margin: 10px 0; text-shadow: 0 0 10px currentColor;">0%
-            </h3>
-            <p id="result-desc" class="status-desc">טקסט דינאמי יופיע כאן</p>
-            <div class="status-meter">
-                <div id="status-fill" class="status-fill"></div>
+            <button class="btn outline-btn mt-20" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="showScreen('screen-q2')">⬅️ חזור אחורה</button>
+            <button class="btn outline-btn mt-20" style="margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="resetApp()">🏠 חזור למסך הבית</button>
+        </section>
+
+        <!-- Loading Screen -->
+        <section id="screen-loading" class="screen">
+            <div class="defuse-animation">
+                <div class="bomb-timer">00:00:00</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <p class="loading-text">מנתח סיכוני אזעקה ואובדן ELO...</p>
             </div>
-            <!-- Game info output -->
-            <p class="chosen-game-text" id="result-game-info"></p>
+        </section>
 
-            <!-- Risk Breakdown -->
-            <div id="risk-breakdown"
-                style="margin-top: 15px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; text-align: right; color: rgba(255,255,255,0.8); line-height: 1.4;">
+        <!-- Result Screen -->
+        <section id="screen-result" class="screen">
+            <div class="result-card" id="result-box">
+                <h2 id="result-status" class="status-title orbitron">MISSION PASSED</h2>
+                <h3 id="result-percentage"
+                    style="font-size: 2.5rem; margin: 10px 0; text-shadow: 0 0 10px currentColor;">0%
+                </h3>
+                <p id="result-desc" class="status-desc">טקסט דינאמי יופיע כאן</p>
+                <div class="status-meter">
+                    <div id="status-fill" class="status-fill"></div>
+                </div>
+                <!-- Game info output -->
+                <p class="chosen-game-text" id="result-game-info"></p>
+
+                <!-- Risk Breakdown -->
+                <div id="risk-breakdown"
+                    style="margin-top: 15px; font-size: 0.85rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; text-align: right; color: rgba(255,255,255,0.8); line-height: 1.4;">
+                </div>
             </div>
-        </div>
 
-        <div class="action-buttons">
-            <button class="btn discord-btn" onclick="copyToClipboard()">
-                שתף לדיסקורד / WhatsApp 📋
-            </button>
-            <button class="btn outline-btn" onclick="resetApp()">
-                חישוב מחדש 🔄
-            </button>
-        </div>
-    </section>
+            <div class="action-buttons">
+                <button class="btn discord-btn" onclick="copyToClipboard()">
+                    שתף לדיסקורד / WhatsApp 📋
+                </button>
+                <button class="btn outline-btn" onclick="resetApp()">
+                    חישוב מחדש 🔄
+                </button>
+            </div>
+        </section>
 
     </div>
 
