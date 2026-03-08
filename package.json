@@ -4,5 +4,8 @@
   "description": "Risk calculator for Israeli gamers",
   "scripts": {
     "start": "npx serve ."
+  },
+  "dependencies": {
+    "redis": "^5.11.0"
   }
 }

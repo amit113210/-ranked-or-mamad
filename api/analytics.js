@@ -1,3 +1,5 @@
+import { createClient } from 'redis';
+
 export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Credentials', true)
@@ -13,38 +15,28 @@ export default async function handler(req, res) {
         return
     }
 
+    let visits = 1204; // Baseline fallback
+    let debugMsg = "All good";
+    let client = null;
+
     try {
-        let visits = 1204; // Baseline fallback
-        let debugMsg = "All good";
+        const redisUrl = process.env.REDIS_URL || 'redis://default:rFSKE5eRQtMB9QAsIyqBUfpQWCwWv8zN@redis-17593.crce218.eu-central-1-1.ec2.cloud.redislabs.com:17593';
 
-        // In Vercel, when you link Upstash Redis / Vercel KV, it exposes these two variables natively
-        const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-        const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+        client = createClient({
+            url: redisUrl
+        });
 
-        if (kvUrl && kvToken) {
-            // Use native fetch to hit the Upstash REST API directly to avoid Edge SDK runtime mismatches
-            const cleanUrl = kvUrl.endsWith('/') ? kvUrl.slice(0, -1) : kvUrl;
+        client.on('error', (err) => {
+            console.error('Redis Client Error', err);
+            debugMsg = `Client Err: ${err.message}`;
+        });
 
-            // Atomically INCR the 'visitor_count'
-            const response = await fetch(`${cleanUrl}/INCR/visitor_count`, {
-                headers: {
-                    Authorization: `Bearer ${kvToken}`,
-                },
-                method: 'POST',
-            });
+        await client.connect();
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.result) {
-                    visits = parseInt(data.result, 10);
-                }
-            } else {
-                debugMsg = `REST Error: ${response.status} ${response.statusText}`;
-                console.error("KV REST Failed:", await response.text());
-            }
-        } else {
-            debugMsg = "Missing environment variables: KV_REST_API_URL or UPSTASH_REDIS_REST_URL";
-            console.warn("Analytics: No KV environment variables detected.");
+        // Atomically INCR the 'visitor_count'
+        const newValue = await client.incr('visitor_count');
+        if (newValue) {
+            visits = newValue;
         }
 
         res.status(200).json({
@@ -52,13 +44,22 @@ export default async function handler(req, res) {
             visits: visits,
             debug: debugMsg
         });
+
     } catch (error) {
-        console.error("Redis REST Error:", error);
-        // Fallback gracefully so the UI doesn't crash
+        console.error("Redis Connection Error:", error);
         res.status(200).json({
             success: true,
-            visits: 1204,
+            visits: visits,
             debug: `Code Error: ${error.message}`
         });
+    } finally {
+        if (client) {
+            try {
+                // Ensure connection is closed so Vercel function can exit gracefully
+                await client.disconnect();
+            } catch (e) {
+                // Ignore disconnect errors
+            }
+        }
     }
 }
