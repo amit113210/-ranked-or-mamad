@@ -208,7 +208,7 @@ async function fetchAlertData() {
 
             const nowStr = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
 
-            statusEl.innerText = `✅ מחובר. סה"כ אזעקות: ${riskData.alarmsToday} (סונכרן כעת: ${nowStr} | אזעקה אחרונה: ${lastAlarmStr})`;
+            statusEl.innerHTML = `✅ מחובר. סה"כ אזעקות: ${riskData.alarmsToday} <span style="font-size: 0.8rem; opacity: 0.8; display: block; margin-top: 5px;">(סונכרן כעת: ${nowStr} | אזעקה אחרונה: ${lastAlarmStr})</span>`;
             statusEl.style.color = 'var(--neon-green)';
 
             document.getElementById('q2-desc').innerText = `מערכת מחוברת: ${riskData.alarmsToday} התרעות נרשמו עד כה.`;
@@ -426,6 +426,7 @@ function showResult() {
     const resultBox = document.getElementById('result-box');
     const statusTitle = document.getElementById('result-status');
     const statusDesc = document.getElementById('result-desc');
+    const statusPercentage = document.getElementById('result-percentage');
 
     // Reset classes
     resultBox.className = 'result-card';
@@ -435,6 +436,9 @@ function showResult() {
     let desc = '';
 
     const score = riskData.finalScore;
+    const percentage = Math.min(99, Math.max(1, Math.round(score)));
+
+    statusPercentage.innerText = `${percentage}% סיכון`;
 
     if (score < 40) {
         theme = 'theme-green';

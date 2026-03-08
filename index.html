@@ -77,6 +77,9 @@
                     <span class="badge">60+ דק'</span>
                 </button>
             </div>
+
+            <button class="btn outline-btn mt-20" style="margin-top: 2rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="resetApp()">🏠 חזור למסך הבית</button>
         </section>
 
         <!-- Question 2: Location -->
@@ -90,6 +93,10 @@
                 <div id="city-autocomplete-list" class="autocomplete-items"></div>
                 <button class="btn primary w-100 mt-20" onclick="selectQ2()">אישור 📍</button>
             </div>
+            <button class="btn outline-btn mt-20" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="showScreen('screen-q1')">⬅️ חזור אחורה</button>
+            <button class="btn outline-btn mt-20" style="margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="resetApp()">🏠 חזור למסך הבית</button>
         </section>
 
         <!-- Question 3: Rank Importance -->
@@ -107,6 +114,11 @@
 
                 <button class="btn primary mt-40 w-100" onclick="calculateResult()">חשב סיכון ⚠️</button>
             </div>
+
+            <button class="btn outline-btn mt-20" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="showScreen('screen-q2')">⬅️ חזור אחורה</button>
+            <button class="btn outline-btn mt-20" style="margin-top: 0.5rem; font-size: 0.9rem; padding: 0.5rem;"
+                onclick="resetApp()">🏠 חזור למסך הבית</button>
         </section>
 
         <!-- Loading Screen -->
@@ -124,6 +136,8 @@
         <section id="screen-result" class="screen">
             <div class="result-card" id="result-box">
                 <h2 id="result-status" class="status-title orbitron">MISSION PASSED</h2>
+                <h3 id="result-percentage"
+                    style="font-size: 2.5rem; margin: 10px 0; text-shadow: 0 0 10px currentColor;">0%</h3>
                 <p id="result-desc" class="status-desc">טקסט דינאמי יופיע כאן</p>
                 <div class="status-meter">
                     <div id="status-fill" class="status-fill"></div>
